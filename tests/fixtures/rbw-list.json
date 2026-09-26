@@ -1,0 +1,8 @@
+[
+  {"id":"00000000-0000-4000-8000-000000000001","name":"Example Mobile","user":"someone@example.com","folder":null,"uris":["https://www.example.com/login"],"type":"Login"},
+  {"id":"00000000-0000-4000-8000-000000000002","name":"Example Mobile (family)","user":"family@example.com","folder":null,"uris":["https://example.com/"],"type":"Login"},
+  {"id":"00000000-0000-4000-8000-000000000003","name":"Example Power","user":null,"folder":"Home","uris":["https://power.example.net/mypage"],"type":"Login"},
+  {"id":"00000000-0000-4000-8000-000000000004","name":"Example Card","user":null,"folder":null,"uris":[],"type":"Card"},
+  {"id":"00000000-0000-4000-8000-000000000005","name":"Recovery codes","user":null,"folder":null,"uris":[],"type":"Note"},
+  {"id":"00000000-0000-4000-8000-000000000006","name":"example power","user":null,"folder":null,"uris":[],"type":"Login"}
+]

@@ -1,0 +1,17 @@
+/target/
+/client/node_modules/
+/client/dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+/client/test-results/
+/client/playwright-report/
+
+# Local ledger (DB_PATH default); personal data never belongs in the repository.
+/data/
+*.db
+*.db-wal
+*.db-shm
