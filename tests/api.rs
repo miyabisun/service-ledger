@@ -16,15 +16,17 @@ struct Ledger {
 
 impl Ledger {
     fn new() -> Self {
-        let dir = tempfile::tempdir().unwrap();
-        let app = app(Store::open(&dir.path().join("data/service-ledger.db")).unwrap());
+        let dir = tempfile::tempdir().expect("temporary directory is creatable");
+        let app = app(Store::open(&dir.path().join("data/service-ledger.db"))
+            .expect("a fresh ledger opens in the temporary directory"));
         Self { dir, app }
     }
 
     fn reopen(self) -> Self {
         let dir = self.dir;
         drop(self.app);
-        let app = app(Store::open(&dir.path().join("data/service-ledger.db")).unwrap());
+        let app = app(Store::open(&dir.path().join("data/service-ledger.db"))
+            .expect("the ledger written by the previous app reopens"));
         Self { dir, app }
     }
 
@@ -39,12 +41,14 @@ impl Ledger {
             .oneshot(
                 request
                     .body(body.map_or_else(Body::empty, Body::from))
-                    .unwrap(),
+                    .expect("request parts are valid"),
             )
             .await
-            .unwrap();
+            .expect("the router is infallible");
         let status = response.status();
-        let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let bytes = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("the response body is readable");
         (
             status,
             serde_json::from_slice(&bytes).unwrap_or(Value::Null),
@@ -60,9 +64,14 @@ impl Ledger {
         assert_eq!(status, StatusCode::OK, "{uri}: {body}");
         body["services"]
             .as_array()
-            .unwrap()
+            .expect("the list response has a services array")
             .iter()
-            .map(|s| s["name"].as_str().unwrap().to_owned())
+            .map(|s| {
+                s["name"]
+                    .as_str()
+                    .expect("every service has a string name")
+                    .to_owned()
+            })
             .collect()
     }
 }
@@ -370,13 +379,19 @@ async fn rpc(app: &Router, session: Option<&str>, message: Value) -> (HeaderMap,
     }
     let response = app
         .clone()
-        .oneshot(request.body(Body::from(message.to_string())).unwrap())
+        .oneshot(
+            request
+                .body(Body::from(message.to_string()))
+                .expect("request parts are valid"),
+        )
         .await
-        .unwrap();
+        .expect("the router is infallible");
     let status = response.status();
     let headers = response.headers().clone();
-    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let text = String::from_utf8(bytes.to_vec()).unwrap();
+    let bytes = to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("the response body is readable");
+    let text = String::from_utf8(bytes.to_vec()).expect("the MCP response is UTF-8");
     assert!(status.is_success(), "MCP {status}: {text}");
     let value = serde_json::from_str(&text).unwrap_or_else(|_| {
         text.lines()
