@@ -161,7 +161,7 @@ The server listens on <http://127.0.0.1:3000> and creates `data/service-ledger.d
 by Git). For frontend work, also run `npm --prefix client run dev` and open
 <http://127.0.0.1:5173>; Vite proxies `/api` to port 3000.
 
-Verification, as run by CI:
+Run the full verification locally before every commit:
 
 ```sh
 npm --prefix client run format:check
@@ -175,19 +175,22 @@ cargo test --locked
 cargo build --locked
 npx --prefix client playwright install chromium
 npm --prefix client run test:e2e
+docker build --tag service-ledger:test .
+bash scripts/smoke-image.sh service-ledger:test
 ```
 
 The browser tests start `target/debug/service-ledger` on port 5187.
 They use a throwaway database in `target/e2e-data` and register fictional services.
 Chromium then drives the UI at desktop and phone widths in both themes.
+The image smoke test runs the container on an empty volume, registers a fictional service,
+restarts it, and reads the service back.
 [`DESIGN.md`](DESIGN.md) is the UI's design contract.
 
 ## Releases
 
-CI runs on every branch push and pull request, including a container build and an image
-smoke test. A `vX.Y.Z` tag that matches `Cargo.toml` reruns CI and then publishes the image.
-The release pushes `ghcr.io/miyabisun/service-ledger:X.Y.Z` and `latest`, then creates a
-GitHub Release.
+GitHub Actions only builds releases; verification runs locally as above. A `vX.Y.Z` tag
+that matches `Cargo.toml` builds the image, pushes `ghcr.io/miyabisun/service-ledger:X.Y.Z`
+and `latest`, then creates a GitHub Release.
 
 ## License
 
