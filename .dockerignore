@@ -10,5 +10,3 @@ README.md
 data
 *.db
 *.db-*
-client/test-results
-client/playwright-report

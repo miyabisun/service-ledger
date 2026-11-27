@@ -148,8 +148,8 @@ shows the expected shape with fictional entries.
 
 ## Development
 
-Requires Rust 1.96 (pinned by `rust-toolchain.toml`) and Node.js 24. The frontend is built
-first because the Rust binary embeds `client/dist`.
+Requires Rust 1.96 (pinned by `rust-toolchain.toml`), Node.js 24 and Python 3. The frontend
+is built first because the Rust binary embeds `client/dist`.
 
 ```sh
 npm --prefix client ci
@@ -171,17 +171,19 @@ npm --prefix client run build
 npm --prefix client run lint:design
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
+python3 bin/test_browser.py
 cargo test --locked
 cargo build --locked
-npx --prefix client playwright install chromium
-npm --prefix client run test:e2e
 docker build --tag service-ledger:test .
 bash scripts/smoke-image.sh service-ledger:test
 ```
 
-The browser tests start `target/debug/service-ledger` on port 5187.
-They use a throwaway database in `target/e2e-data` and register fictional services.
-Chromium then drives the UI at desktop and phone widths in both themes.
+`npm --prefix client test` runs the UI tests in jsdom. `cargo test` also runs the browser
+tests in [`tests/page.rs`](tests/page.rs) for layout, scrolling, theme colours and keyboard
+focus. They start the server binary on a free port with a throwaway database of fictional
+services, and drive one headless Chromium through ChromeDriver at desktop and phone widths in
+both themes. On first use, [`bin/browser`](bin/browser) downloads the pinned Chrome for
+Testing build into `~/.cache/chrome-for-testing/`.
 The image smoke test runs the container on an empty volume, registers a fictional service,
 restarts it, and reads the service back.
 [`DESIGN.md`](DESIGN.md) is the UI's design contract.

@@ -6,9 +6,7 @@
 !.env.example
 *.log
 .DS_Store
-
-/client/test-results/
-/client/playwright-report/
+__pycache__/
 
 # Local ledger (DB_PATH default); personal data never belongs in the repository.
 /data/

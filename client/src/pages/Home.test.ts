@@ -66,6 +66,7 @@ describe("Home", () => {
     );
     render(Home);
     expect(listContainer().dataset.state).toBe("loading");
+    expect(screen.getByText("読み込み中…")).toBeTruthy();
     await waitFor(() => expect(listContainer().dataset.state).toBe("success"));
 
     const edit = screen.getByRole("link", { name: /Example Mobile\s*旧住所/ });
@@ -123,6 +124,71 @@ describe("Home", () => {
     expect(listHref()).toBe("/?q=power");
   });
 
+  it("search and status filter stay in the URL across reloads", async () => {
+    const found = [40, 41, 42, 43, 44, 45, 46, 47, 48, 49].map((n) =>
+      service({
+        id: n,
+        name: `Example Service 0${n}`,
+        address_status: n % 3 === 0 ? "old" : "unknown",
+      }),
+    );
+    const old = found.filter((s) => s.address_status === "old");
+    const answers: Record<string, Service[]> = {
+      "/api/services": SERVICES,
+      "/api/services?q=service04": found,
+      "/api/services?q=service04&address_status=old": old,
+      "/api/services?q=no+such+service&address_status=old": [],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>().mockImplementation((input) => {
+        const services = answers[String(input)];
+        if (!services) throw new Error(`unexpected request ${String(input)}`);
+        return Promise.resolve(listResponse(services));
+      }),
+    );
+    const names = () =>
+      [...document.querySelectorAll(".card .name")].map((n) => n.textContent);
+    render(Home);
+    await waitFor(() => expect(listContainer().dataset.state).toBe("success"));
+    await fireEvent.input(screen.getByRole("searchbox"), {
+      target: { value: "service04" },
+    });
+    await waitFor(() => expect(names()).toHaveLength(10));
+    await fireEvent.click(screen.getByRole("button", { name: /^旧住所/ }));
+    await waitFor(() =>
+      expect(names()).toEqual([
+        "Example Service 042",
+        "Example Service 045",
+        "Example Service 048",
+      ]),
+    );
+    expect(window.location.search).toBe("?q=service04&status=old");
+    expect(
+      document.querySelectorAll('.card .badge[data-status="old"]'),
+    ).toHaveLength(3);
+
+    // A reload renders the page again from the URL it left.
+    cleanup();
+    render(Home);
+    const search = screen.getByRole("searchbox", {
+      name: "名前・URL・メモで検索",
+    }) as HTMLInputElement;
+    expect(search.value).toBe("service04");
+    expect(
+      screen
+        .getByRole("button", { name: /^旧住所/ })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    await waitFor(() => expect(names()).toHaveLength(3));
+    await fireEvent.input(search, { target: { value: "no such service" } });
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toBe(
+        "一致するサービスがありません",
+      ),
+    );
+  });
+
   it("distinguishes an empty ledger from no matches", async () => {
     vi.stubGlobal(
       "fetch",
@@ -152,6 +218,7 @@ describe("Home", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(Home);
     await waitFor(() => expect(listContainer().dataset.state).toBe("error"));
+    expect(screen.getByText("読み込みに失敗しました")).toBeTruthy();
     await fireEvent.click(screen.getByRole("button", { name: "再試行" }));
     await waitFor(() => expect(listContainer().dataset.state).toBe("success"));
   });
